@@ -456,18 +456,27 @@ mod tests {
         );
     }
 
-    fn omp_unpinned_session(dir: &std::path::Path, session_id: &str, credential: u64) -> String {
+    /// An unpinned omp session whose first reply was served by stored
+    /// credential 1 and whose newest reply by `newest` (`None`: a runtime or
+    /// config key, which omp leaves unstamped).
+    fn omp_unpinned_session(
+        dir: &std::path::Path,
+        session_id: &str,
+        newest: Option<u64>,
+    ) -> String {
         use crate::pi::test_support::*;
 
         let mut lines = header(session_id);
         lines.push(model_change("m0", None, "opencode-go/model-a"));
-        lines.push(
-            assistant("a0", "m0", "opencode-go", "model-a", 900).replace(
-                r#""stopReason""#,
-                &format!(r#""credentialId":{credential},"stopReason""#),
-            ),
-        );
-        lines.push(assistant("a1", "a0", "opencode-go", "model-a", 950));
+        lines.push(stamped(
+            assistant("a0", "m0", "opencode-go", "model-a", 900),
+            1,
+        ));
+        let reply = assistant("a1", "a0", "opencode-go", "model-a", 950);
+        lines.push(match newest {
+            Some(credential) => stamped(reply, credential),
+            None => reply,
+        });
         let sessions = dir.join(".omp/agent/sessions/-workspace");
         fs::create_dir_all(&sessions).unwrap();
         let path = sessions.join(format!("2099-01-01_{session_id}.jsonl"));
@@ -481,22 +490,41 @@ mod tests {
         let key = |path: &str| crate::herdr::nest_group_key(&omp_pane(path), &evidence);
         let profile = tempdir().unwrap();
         let other_profile = tempdir().unwrap();
-        let first = omp_unpinned_session(profile.path(), "session-one", 1);
-        let second = omp_unpinned_session(profile.path(), "session-two", 1);
-        let rotated = omp_unpinned_session(profile.path(), "session-three", 2);
-        let elsewhere = omp_unpinned_session(other_profile.path(), "session-four", 1);
-        assert_eq!(
-            resolve_with_identity(&omp_pane(&first))
+        let credential = |path: &str| {
+            resolve_with_identity(&omp_pane(path))
                 .omp
                 .expect("evidence")
                 .credential_id
-                .as_deref(),
-            Some("1")
-        );
+        };
+        let first = omp_unpinned_session(profile.path(), "session-one", Some(1));
+        let second = omp_unpinned_session(profile.path(), "session-two", Some(1));
+        let rotated = omp_unpinned_session(profile.path(), "session-three", Some(2));
+        let elsewhere = omp_unpinned_session(other_profile.path(), "session-four", Some(1));
+        let runtime_key = omp_unpinned_session(profile.path(), "session-five", None);
+        assert_eq!(credential(&first).as_deref(), Some("1"));
+        assert_eq!(credential(&rotated).as_deref(), Some("2"));
         assert!(key(&first).is_some());
         assert_eq!(key(&first), key(&second));
         assert_ne!(key(&first), key(&rotated));
         assert_ne!(key(&first), key(&elsewhere));
+        // Credential 1 served this session before an unstamped key took over,
+        // so nothing proves it shares a payer with `first`.
+        assert_eq!(credential(&runtime_key), None);
+        assert_eq!(key(&runtime_key), None);
+        // Esc before the first token reached no provider: the tab stays in
+        // `first`'s row instead of leaving and rejoining it.
+        let escaped = omp_unpinned_session(profile.path(), "session-six", Some(1));
+        let mut transcript = fs::read_to_string(&escaped).unwrap();
+        transcript.push_str(&crate::pi::test_support::interrupted(
+            "a2",
+            "a1",
+            "opencode-go",
+            "model-a",
+        ));
+        transcript.push('\n');
+        fs::write(&escaped, transcript).unwrap();
+        assert_eq!(credential(&escaped).as_deref(), Some("1"));
+        assert_eq!(key(&escaped), key(&first));
     }
 
     /// Two omp panes on one provider share its quota target but not a model:
