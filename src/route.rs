@@ -945,6 +945,46 @@ mod tests {
         );
     }
 
+    /// A device login that is no longer the console connection OpenCode serves
+    /// with is not evidence that it pays for a Go session.
+    #[test]
+    fn an_inactive_console_login_does_not_prove_a_go_session() {
+        let dir = tempdir().unwrap();
+        let paths = write_opencode_v2(
+            dir.path(),
+            "{}",
+            &[(
+                "ses_go",
+                "assistant",
+                r#"{"model":{"id":"model-a","providerID":"opencode-go"}}"#,
+            )],
+        );
+        crate::opencode::write_credential_fixture_db(
+            &paths.db,
+            &[
+                (
+                    "cred_device",
+                    "opencode",
+                    r#"{"type":"oauth","methodID":"device","access":"st_access","metadata":{"accountID":"acc_1","orgID":"wrk_1"}}"#,
+                ),
+                (
+                    "cred_key",
+                    "opencode",
+                    r#"{"type":"key","key":"sk-service"}"#,
+                ),
+            ],
+        )
+        .unwrap();
+        rusqlite::Connection::open(&paths.db)
+            .unwrap()
+            .execute("UPDATE credential SET active = (id = 'cred_key')", [])
+            .unwrap();
+        assert_eq!(
+            resolve_opencode_with_identity(Some("ses_go"), Some(paths)).resolution,
+            Resolution::Indeterminate
+        );
+    }
+
     #[test]
     fn one_disk_credential_does_not_attribute_a_different_backend() {
         let auth =

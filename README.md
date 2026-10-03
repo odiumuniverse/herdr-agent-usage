@@ -211,7 +211,7 @@ normal quota percentage instead of guessing.
 | Cursor | CLI DashboardService usage; at, api, and 30d | Current CLI `auth.json`, else the macOS Keychain login from `cursor-agent login`, else `$CURSOR_STATE_DB` (`state.vscdb` access token) when the CLI has no login; model from local session files; topic from the generated session title; `cx` from `store.db` `token_details` (the CLI footer percent); cache from CLI hooks |
 | Claude Code | StatusLine; 5h and 7d | Exact session observation |
 | Agy / Antigravity | StatusLine; 5h, 7d, and api (third-party pool on Gemini) | Exact session and identifiable model pool |
-| OpenCode | OpenCode console Go meters; per-key usage endpoint as fallback | The active console login stored by OpenCode (its `credential` table), which also proves a Go session without a key; fallback is the Go API key |
+| OpenCode | OpenCode console Go meters; per-key usage endpoint as fallback | The active console login stored by OpenCode (its `credential` table), which also proves a Go session without a key; the Go API key only when the store holds no console connection |
 | Pi | Canonical Codex quota | Only when the recorded account matches |
 | OMP | `omp usage --json --provider <id>` | Reported account matching the session's credential pin |
 | Kilo Code | Kilo Pass account state (`kiloPass.getState`); 30d | The OAuth gateway login in Kilo's `auth.json`, and only for a session whose backend is the Kilo Gateway; context from that session's messages and Kilo's model catalog |

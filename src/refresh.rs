@@ -1190,8 +1190,13 @@ fn refresh_opencode_go(cache: &CacheStore, target: &BillingTarget, now: u64) {
     // The console login is the serving principal for OpenCode 2 panes; the Go
     // API key is the fallback for stores without one. The account marker has to
     // name whichever credential will be used, or a saved snapshot is rejected
-    // as another login's.
-    let credential = crate::opencode::console_credential(&paths);
+    // as another login's. A console served by a connection whose meters cannot
+    // be read is not one the key serves either, so nothing is fetched.
+    let credential = match crate::opencode::console_connection(&paths) {
+        Some(crate::opencode::ConsoleConnection::Login(credential)) => Some(credential),
+        Some(crate::opencode::ConsoleConnection::Unmetered) => return,
+        None => None,
+    };
     let account_id = match &credential {
         Some(credential) => credential.account_id.clone(),
         None => match crate::opencode::go_key(&paths) {

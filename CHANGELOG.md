@@ -68,7 +68,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   without a Go API key. The key in `auth.json` or `OPENCODE_API_KEY` was the
   only accepted evidence, so a console-only install showed no quota at all.
 - With more than one console login in the OpenCode store, the Go meters come
-  from the active one instead of the most recently updated one.
+  from the connection OpenCode serves with (active first, then newest created)
+  instead of the most recently updated login. When that connection is one the
+  plugin cannot meter (a service-account key, or a login without a token or
+  workspace), no Go meters are shown: an older device login is not used in its
+  place, and neither is the Go API key.
 - Two omp tabs on a provider omp writes no `credential_pin` for (any API-key
   login) share a row when the same omp profile served both from the same
   stored credential. The newest reply names that credential, so tabs on one key

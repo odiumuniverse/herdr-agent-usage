@@ -181,7 +181,7 @@ Claude 状态栏节奏是独立开关，默认开启以保持升级前行为；�
 | Cursor | CLI DashboardService usage；at、api 和 30d | 当前 CLI `auth.json`，否则 macOS Keychain 里 `cursor-agent login` 的登录，否则在 CLI 没有自己的登录且设置了 `$CURSOR_STATE_DB` 时用桌面端 `state.vscdb` 的 access token；模型和主题来自本地会话文件；`cx` 来自 `store.db` `token_details`（CLI 底栏百分比）；cache 来自 CLI hook |
 | Claude Code | StatusLine；5h 和 7d | 精确会话的观测 |
 | Agy / Antigravity | StatusLine；5h、7d，以及 Gemini 会话上的 api（第三方池） | 精确会话与可确认的模型额度池 |
-| OpenCode | OpenCode 控制台 Go 额度；按 key 的 usage 接口作为回退 | OpenCode 存储（`credential` 表）里当前激活的控制台登录，没有 Go API key 时它也能证明 Go 会话；回退为 Go API key；确认的 PAYG 路由不显示订阅额度 |
+| OpenCode | OpenCode 控制台 Go 额度；按 key 的 usage 接口作为回退 | OpenCode 存储（`credential` 表）里当前激活的控制台登录，没有 Go API key 时它也能证明 Go 会话；存储里没有任何控制台连接时才回退为 Go API key；确认的 PAYG 路由不显示订阅额度 |
 | Pi | 规范 Codex collector 的额度 | 仅在记录的账号一致时复用 |
 | OMP | `omp usage --json --provider <id>` | usage 账号与会话 credential pin 一致 |
 | Kilo Code | Kilo Pass 账号状态（`kiloPass.getState`）；30d | Kilo `auth.json` 里的 OAuth 网关登录，且只对后端为 Kilo Gateway 的会话生效；上下文取自该会话的消息与 Kilo 的模型目录 |
